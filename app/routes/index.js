@@ -14,6 +14,7 @@ module.exports = function (app, db) {
         });
     });
     app.post(`/add-category`, (req, res) => {
+        res.setHeader('Content-Type', 'multipart/form-data');
         db.createCollection(req.body.title);
         if(err) {
             res.send(err);

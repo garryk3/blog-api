@@ -1,4 +1,4 @@
-module.exports = function (app, db) {
+module.exports = function (app, db, err) {
     app.post('/test', (req, res) => {
         res.send('Hello')
         console.log(req.body)
@@ -17,7 +17,7 @@ module.exports = function (app, db) {
         res.setHeader('Content-Type', 'multipart/form-data');
         db.createCollection(req.body.title);
         if(err) {
-            res.send(err);
+            res.send('fail');
         } else {
             res.send('success');
         }

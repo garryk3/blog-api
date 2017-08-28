@@ -7,14 +7,14 @@ module.exports = function (app, db, err) {
         res.setHeader('Content-Type', 'multipart/form-data');
         db.collection('notes').insert(req.body, (err, result) => {
             if (err) {
-                res.send({ 'error': 'An error has occurred' });
+                res.send(err);
             } else {
                 res.send('success')
             }
         });
     });
     app.post(`/add-category`, (req, res) => {
-        res.setHeader('Content-Type', 'multipart/form-data');
+        res.setHeader('Content-Type', 'text/json');
         db.createCollection(req.body.title);
         if(err) {
             res.send('fail');

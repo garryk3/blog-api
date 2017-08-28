@@ -9,6 +9,7 @@ const port = 8000;
 
 app.use(cors({origin: db.siteUrl}));
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
 MongoClient.connect(db.dbUrl, (err, database) => {
     if (err) return console.log(err)

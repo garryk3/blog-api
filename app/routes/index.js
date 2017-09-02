@@ -9,14 +9,14 @@ module.exports = function (app, db, err) {
         })
     })
 
-    app.get('/get-documents', (req, res) => {
+    app.get('/get-documents-names', (req, res) => {
         db.listCollections().toArray().then((items) => {
             if(err) {
                 res.send(err)
             } else {
                 const docList = []
                 items.forEach((item, index) => {
-                    db.collection(item.name).find().toArray().then((docs) => {
+                    db.collection(item.name).find({}, {name: true}).toArray().then((docs) => {
                         docList.push({
                             name: item.name,
                             docs

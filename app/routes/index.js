@@ -1,8 +1,36 @@
 module.exports = function (app, db, err) {
-    app.post('/test', (req, res) => {
-        res.send('Hello')
-        console.log(req.body)
-    });
+    app.get('/get-categories', (req, res) => {
+        db.listCollections().toArray().then((items) => {
+            if(err) {
+                res.send(err)
+            } else {
+                res.send(items)
+            }
+        })
+    })
+
+    app.get('/get-documents', (req, res) => {
+        db.listCollections().toArray().then((items) => {
+            if(err) {
+                res.send(err)
+            } else {
+                const docList = []
+                items.forEach((item, index) => {
+                    db.collection(item.name).find().toArray().then((docs) => {
+                        docList.push({
+                            name: item.name,
+                            docs
+                        })
+                        if((index + 1) === items.length) {
+                            res.send(docList)
+                        }
+                    })
+                })
+            }
+        })
+    })
+
+
     app.post(`/add-article`, (req, res, next) => {
         res.setHeader('Content-Type', 'multipart/form-data');
         db.collection('notes').insert(req.body, (err, result) => {
@@ -13,6 +41,7 @@ module.exports = function (app, db, err) {
             }
         });
     });
+
     app.post(`/add-category`, (req, res) => {
         res.setHeader('Content-Type', 'text/json');
         db.createCollection(req.body.title);

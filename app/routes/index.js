@@ -4,7 +4,27 @@ module.exports = function (app, db, err) {
             if(err) {
                 res.send(err)
             } else {
-                res.send(items)
+                const names = items.map((item) => {
+                    if(item.name !== 'system.indexes') {
+                        return {
+                            name: item.name,
+                            articles: []
+                        }
+                    }
+                }).filter((item) => {
+                    if (item) return item
+                })
+                res.send(names)
+            }
+        })
+    })
+
+    app.post('/get-documents', (req, res) => {
+        db.collection(req.body.name).find({}).toArray().then((docs) => {
+            if(err) {
+                res.send(err);
+            } else {
+                res.send(docs);
             }
         })
     })
@@ -15,16 +35,23 @@ module.exports = function (app, db, err) {
                 res.send(err)
             } else {
                 const docList = []
-                items.forEach((item, index) => {
-                    db.collection(item.name).find({}, {name: true}).toArray().then((docs) => {
-                        docList.push({
-                            name: item.name,
-                            docs
+                const ignore = ['system.indexes']
+                const finalLength = items.length - ignore.length
+                items.forEach((item) => {
+                    if (ignore.findIndex((ignore) => ignore === item.name) === -1) {
+                        db.collection(item.name).find({}, {name: true}).toArray().then((docs) => {
+                            docList.push({
+                                name: item.name,
+                                articles: docs
+                            })
+                            if(docList.length === finalLength) {
+                                const response = docList.sort((a, b) => {
+                                    return a.name > b.name
+                                })
+                                res.send(response)
+                            }
                         })
-                        if((index + 1) === items.length) {
-                            res.send(docList)
-                        }
-                    })
+                    }
                 })
             }
         })
@@ -46,7 +73,7 @@ module.exports = function (app, db, err) {
         res.setHeader('Content-Type', 'text/json');
         db.createCollection(req.body.title);
         if(err) {
-            res.send('fail');
+            res.send(err);
         } else {
             res.send('success');
         }

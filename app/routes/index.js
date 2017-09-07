@@ -60,7 +60,7 @@ module.exports = function (app, db, err) {
 
     app.post(`/add-article`, (req, res, next) => {
         res.setHeader('Content-Type', 'multipart/form-data');
-        db.collection('notes').insert(req.body, (err, result) => {
+        db.collection('notes').insert(req.body, (error, result) => {
             if (err) {
                 res.send(err);
             } else {
@@ -71,11 +71,12 @@ module.exports = function (app, db, err) {
 
     app.post(`/add-category`, (req, res) => {
         res.setHeader('Content-Type', 'text/json');
-        db.createCollection(req.body.title);
-        if(err) {
-            res.send(err);
-        } else {
-            res.send('success');
-        }
+        db.createCollection(req.body.title, {}, (err, col) => {
+            if(err) {
+                res.send(err);
+            } else {
+                res.send('success');
+            }
+        });
     });
 }

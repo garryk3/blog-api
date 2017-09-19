@@ -1,4 +1,4 @@
-module.exports = function (app, db, err) {
+module.exports = function (app, db, err, upload) {
     app.get('/get-categories', (req, res) => {
         db.listCollections().toArray().then((items) => {
             if(err) {
@@ -58,15 +58,16 @@ module.exports = function (app, db, err) {
     })
 
 
-    app.post(`/add-article`, (req, res, next) => {
+    app.post(`/add-article`, upload.array('photos', 12), (req, res, next) => {
         res.setHeader('Content-Type', 'multipart/form-data');
-        db.collection('notes').insert(req.body, (error, result) => {
-            if (err) {
-                res.send(err);
-            } else {
-                res.send('success')
-            }
-        });
+        // db.collection('notes').insert(req.body, (error, result) => {
+        //     if (error) {
+        //         res.send(error);
+        //     } else {
+        //         res.send('success')
+        //     }
+        // });
+        console.log('req', req.files)
     });
 
     app.post(`/add-category`, (req, res) => {

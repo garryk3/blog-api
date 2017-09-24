@@ -42,8 +42,10 @@ module.exports = function (app, db, err, upload) {
                         db.collection(item.name).find({}, {name: true}).toArray().then((docs) => {
                             docList.push({
                                 name: item.name,
-                                articles: docs
+                                articles: docs,
+                                id: item._id
                             })
+                            console.log('id', item)
                             if(docList.length === finalLength) {
                                 const response = docList.sort((a, b) => {
                                     return a.name > b.name
@@ -60,14 +62,24 @@ module.exports = function (app, db, err, upload) {
 
     app.post(`/add-article`, upload.array('photos', 12), (req, res, next) => {
         res.setHeader('Content-Type', 'multipart/form-data');
-        // db.collection('notes').insert(req.body, (error, result) => {
-        //     if (error) {
-        //         res.send(error);
-        //     } else {
-        //         res.send('success')
-        //     }
-        // });
-        console.log('req', req.files)
+        const keys = Object.keys(req.body)
+        const invalid = keys.some((item) => {
+            console.log(item, !req.body[item])
+            return !req.body[item]
+        })
+        if (!invalid) {
+            db.collection(req.body.category).insert(req.body, (error, result) => {
+                if (error) {
+                    res.send(error);
+                } else {
+                    res.send('success')
+                }
+            });
+        } else {
+            res.send(new Error('Заполните все поля'))
+        }
+
+        console.log('req', invalid)
     });
 
     app.post(`/add-category`, (req, res) => {
@@ -80,4 +92,9 @@ module.exports = function (app, db, err, upload) {
             }
         });
     });
+
+    app.post('/delete-article', (req, res) => {
+        console.log('aaa', req.body.article, req.body.category)
+        db.collection(req.body.category).deleteOne({ name: req.body.article })
+    })
 }

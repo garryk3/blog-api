@@ -29,7 +29,7 @@ module.exports = function (app, db, err, upload) {
         })
     })
 
-    app.get('/get-documents-names', (req, res) => {
+    app.get('/get-articles-names', (req, res) => {
         db.listCollections().toArray().then((items) => {
             if(err) {
                 res.send({error: err})
@@ -80,7 +80,6 @@ module.exports = function (app, db, err, upload) {
 
     app.post('/get-article', (req, res) => {
         db.collection(req.body.category).find({name: req.body.article}).toArray(function(err, docs) {
-            console.log(req.body)
             if(err) {
                 res.send({error: err});
             } else {
@@ -90,8 +89,8 @@ module.exports = function (app, db, err, upload) {
     })
 
     app.post('/edit-article', (req, res) => {
+        console.log(req.body)
         db.collection(req.body.category).find({name: req.body.name}).toArray(function(err, docs) {
-            console.log(req.body)
             if(err) {
                 res.send({error: err});
             } else {

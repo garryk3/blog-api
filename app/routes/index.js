@@ -88,16 +88,14 @@ module.exports = function (app, db, err, upload) {
         });
     })
 
-    app.post('/edit-article', (req, res) => {
-        console.log(req.body)
-        db.collection(req.body.category).find({name: req.body.name}).toArray(function(err, docs) {
-            if(err) {
-                res.send({error: err});
-            } else {
-                res.send(docs[0]);
-            }
-        });
-    })
+    app.post('/edit-article', upload.array('photos', 12), (req, res) => {
+        res.setHeader('Content-Type', 'multipart/form-data');
+        console.log('req', req.body)
+        db.collection(req.body.category).update(
+            {name: req.body.name},
+            req.body)
+        res.send('success');
+    });
 
     app.post(`/add-category`, (req, res) => {
         res.setHeader('Content-Type', 'text/json');

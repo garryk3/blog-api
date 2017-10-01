@@ -1,3 +1,5 @@
+const ObjectID = require('mongodb').ObjectID;
+
 module.exports = function (app, db, err, upload) {
     app.get('/get-categories', (req, res) => {
         db.listCollections().toArray().then((items) => {
@@ -79,7 +81,7 @@ module.exports = function (app, db, err, upload) {
     })
 
     app.post('/get-article', (req, res) => {
-        db.collection(req.body.category).find({name: req.body.article}).toArray(function(err, docs) {
+        db.collection(req.body.category).find({'_id': ObjectID(req.body._id)}).toArray(function(err, docs) {
             if(err) {
                 res.send({error: err});
             } else {
@@ -90,10 +92,12 @@ module.exports = function (app, db, err, upload) {
 
     app.post('/edit-article', upload.array('photos', 12), (req, res) => {
         res.setHeader('Content-Type', 'multipart/form-data');
+        const content =  Object.assign({}, req.body)
+        delete content._id
         console.log('req', req.body)
         db.collection(req.body.category).update(
-            {name: req.body.name},
-            req.body)
+            {'_id': ObjectID(req.body._id)},
+            content)
         res.send('success');
     });
 

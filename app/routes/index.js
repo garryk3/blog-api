@@ -19,7 +19,7 @@ module.exports = function (app, db, err, upload) {
         })
     })
 
-    app.post('/get-documents', (req, res) => {
+    app.post('/get-articles', (req, res) => {
         db.collection(req.body.name).find({}).toArray().then((docs) => {
             if(err) {
                 res.send(err);
@@ -32,7 +32,7 @@ module.exports = function (app, db, err, upload) {
     app.get('/get-documents-names', (req, res) => {
         db.listCollections().toArray().then((items) => {
             if(err) {
-                res.send(err)
+                res.send({error: err})
             } else {
                 const docList = []
                 const ignore = ['system.indexes']
@@ -45,7 +45,6 @@ module.exports = function (app, db, err, upload) {
                                 articles: docs,
                                 id: item._id
                             })
-                            console.log('id', item)
                             if(docList.length === finalLength) {
                                 const response = docList.sort((a, b) => {
                                     return a.name > b.name
@@ -64,37 +63,66 @@ module.exports = function (app, db, err, upload) {
         res.setHeader('Content-Type', 'multipart/form-data');
         const keys = Object.keys(req.body)
         const invalid = keys.some((item) => {
-            console.log(item, !req.body[item])
             return !req.body[item]
         })
         if (!invalid) {
             db.collection(req.body.category).insert(req.body, (error, result) => {
                 if (error) {
-                    res.send(error);
+                    res.send({ error });
                 } else {
                     res.send('success')
                 }
             });
         } else {
-            res.send(new Error('Заполните все поля'))
+            res.send({ error: { message: 'Заполните все поля' } })
         }
+    })
 
-        console.log('req', invalid)
-    });
+    app.post('/get-article', (req, res) => {
+        db.collection(req.body.category).find({name: req.body.article}).toArray(function(err, docs) {
+            console.log(req.body)
+            if(err) {
+                res.send({error: err});
+            } else {
+                res.send(docs[0]);
+            }
+        });
+    })
+
+    app.post('/edit-article', (req, res) => {
+        db.collection(req.body.category).find({name: req.body.name}).toArray(function(err, docs) {
+            console.log(req.body)
+            if(err) {
+                res.send({error: err});
+            } else {
+                res.send(docs[0]);
+            }
+        });
+    })
 
     app.post(`/add-category`, (req, res) => {
         res.setHeader('Content-Type', 'text/json');
         db.createCollection(req.body.title, {}, (err, col) => {
             if(err) {
-                res.send(err);
+                res.send({error: err});
             } else {
+                col.ensureIndex({ name: 1 }, { unique: true });
                 res.send('success');
             }
         });
     });
 
     app.post('/delete-article', (req, res) => {
-        console.log('aaa', req.body.article, req.body.category)
         db.collection(req.body.category).deleteOne({ name: req.body.article })
+    })
+
+    app.post('/delete-category', (req, res) => {
+        db.collection(req.body.category).drop((err, reply) => {
+            if(err) {
+                res.send({error: err});
+            } else {
+                res.send('success');
+            }
+        })
     })
 }

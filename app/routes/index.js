@@ -61,20 +61,26 @@ module.exports = function (app, db, err, upload) {
     })
 
 
-    app.post(`/add-article`, upload.array('photos', 12), (req, res, next) => {
+    app.post(`/add-article`, upload.fields([{ name: 'mainImg', maxCount: 1 }, { name: 'gallery', maxCount: 8 }]), (req, res, next) => {
+        console.log('req body', req.body)
+        console.log('req file', req.file, req.files)
         res.setHeader('Content-Type', 'multipart/form-data');
         const keys = Object.keys(req.body)
         const invalid = keys.some((item) => {
             return !req.body[item]
         })
         if (!invalid) {
-            db.collection(req.body.category).insert(req.body, (error, result) => {
-                if (error) {
-                    res.send({ error });
-                } else {
-                    res.send('success')
-                }
-            });
+            if (err) {
+                res.send({ error: err })
+            } else {
+                db.collection(req.body.category).insert(req.body, (error, result) => {
+                    if (error) {
+                        res.send({ error });
+                    } else {
+                        res.send('success')
+                    }
+                });
+            }
         } else {
             res.send({ error: { message: 'Заполните все поля' } })
         }
@@ -91,10 +97,10 @@ module.exports = function (app, db, err, upload) {
     })
 
     app.post('/edit-article', upload.array('photos', 12), (req, res) => {
+        console.log('rreq', req.body)
         res.setHeader('Content-Type', 'multipart/form-data');
         const content =  Object.assign({}, req.body)
         delete content._id
-        console.log('req', req.body)
         db.collection(req.body.category).update(
             {'_id': ObjectID(req.body._id)},
             content)

@@ -1,4 +1,6 @@
 const ObjectID = require('mongodb').ObjectID;
+const fs = require('fs');
+const mkdirp = require('mkdirp');
 
 module.exports = function (app, db, err, upload) {
     app.get('/get-categories', (req, res) => {
@@ -61,14 +63,18 @@ module.exports = function (app, db, err, upload) {
     })
 
 
-    app.post(`/add-article`, upload.fields([{ name: 'mainImg', maxCount: 1 }, { name: 'gallery', maxCount: 8 }]), (req, res, next) => {
-        console.log('req body', req.body)
-        console.log('req file', req.file, req.files)
+    app.post(`/add-article`, upload.fields([{ name: 'mainImg', maxCount: 1 }, { name: 'gallery', maxCount: 20 }]), (req, res, next) => {
+        console.log('req file', req.file)
+        console.log('req files', req.files)
         res.setHeader('Content-Type', 'multipart/form-data');
         const keys = Object.keys(req.body)
         const invalid = keys.some((item) => {
             return !req.body[item]
         })
+
+        req.files.mainImg && imgUploader(req, 'mainImg')
+        req.files.gallery && imgUploader(req, 'gallery')
+
         if (!invalid) {
             if (err) {
                 res.send({ error: err })
@@ -131,5 +137,25 @@ module.exports = function (app, db, err, upload) {
                 res.send('success');
             }
         })
+    })
+}
+
+const imgUploader = (req, key) => {
+    req.files[key].forEach((item) => {
+        const tmpPath = item.path;
+
+        /** The original name of the uploaded file
+         stored in the variable "originalname". **/
+        mkdirp(`/images/${req.body.category}/${req.body.name}/${key}`, (err) => {
+            console.log('err', err)
+        })
+        const targetPath = `/images/${req.body.category}/${req.body.name}/${key}/${item.originalname}`;
+
+        /** A better way to copy the uploaded file. **/
+        const src = fs.createReadStream(tmpPath);
+        const dest = fs.createWriteStream(targetPath);
+        src.pipe(dest);
+        src.on('end', function() { console.log('success') });
+        src.on('error', function(err) { console.log('err', err) });
     })
 }

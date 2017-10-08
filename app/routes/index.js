@@ -63,39 +63,41 @@ module.exports = function (app, db, err, upload) {
     })
 
 
-    app.post(`/add-article`, upload.fields([{ name: 'mainImg', maxCount: 1 }, { name: 'gallery', maxCount: 20 }]), (req, res, next) => {
+    app.post([`/add-article`, '/edit-article'], upload.fields([{ name: 'mainImg', maxCount: 1 }, { name: 'gallery', maxCount: 20 }]), (req, res, next) => {
         res.setHeader('Content-Type', 'multipart/form-data');
-        const keys = Object.keys(req.body)
-        const data = {}
-        const invalid = keys.some((item) => {
-            data[item] = req.body[item]
-            return !req.body[item]
-        })
-
-        if (req.files.mainImg) {
-            imgUploader(req, 'mainImg').then((res) => {
-                data.mainImg = res
-                console.log('data1', data)
-            })
+        const data = Object.assign({}, req.body)
+        let invalid = false
+        for (let key in data) {
+            if (!data[key]) { invalid = true }
         }
-        if (req.files.gallery) {
-            imgUploader(req, 'gallery').then((res) => {
-                data.gallery = res
-            })
+        if (!req.files.mainImg) {
+            invalid = true
         }
-        console.log('data', data)
-
         if (!invalid) {
             if (err) {
                 res.send({ error: err })
             } else {
-                db.collection(req.body.category).insert(data, (error, result) => {
-                    if (error) {
-                        res.send({ error });
+                Promise.all([imgUploader(req, 'mainImg'), imgUploader(req, 'gallery')]).then((response) => {
+                    data.mainImg = response[0]
+                    data.gallery = response[1]
+                    if (req.url === '/add-article') {
+                        console.log('data 1', req.url)
+                        db.collection(req.body.category).insert(data, (error, result) => {
+                            if (error) {
+                                res.send({ error });
+                            } else {
+                                res.send('success')
+                            }
+                        });
                     } else {
+                        console.log('data 2', req.url)
+                        delete data._id
+                        db.collection(req.body.category).update(
+                            {'_id': ObjectID(req.body._id)},
+                            data)
                         res.send('success')
                     }
-                });
+                })
             }
         } else {
             res.send({ error: { message: 'Заполните все поля' } })
@@ -112,16 +114,16 @@ module.exports = function (app, db, err, upload) {
         });
     })
 
-    app.post('/edit-article', upload.array('photos', 12), (req, res) => {
-        console.log('rreq', req.body)
-        res.setHeader('Content-Type', 'multipart/form-data');
-        const content =  Object.assign({}, req.body)
-        delete content._id
-        db.collection(req.body.category).update(
-            {'_id': ObjectID(req.body._id)},
-            content)
-        res.send('success');
-    });
+    // app.post('/edit-article', upload.array('photos', 12), (req, res) => {
+    //     console.log('rreq', req.body)
+    //     res.setHeader('Content-Type', 'multipart/form-data');
+    //     const content =  Object.assign({}, req.body)
+    //     delete content._id
+    //     db.collection(req.body.category).update(
+    //         {'_id': ObjectID(req.body._id)},
+    //         content)
+    //     res.send('success');
+    // });
 
     app.post(`/add-category`, (req, res) => {
         res.setHeader('Content-Type', 'text/json');
@@ -153,26 +155,31 @@ module.exports = function (app, db, err, upload) {
 const imgUploader = (req, key) => {
     return new Promise((resolve, reject) => {
         const files = []
+        if (!req.files[key]) {
+            resolve(files)
+        } else {
+            req.files[key].forEach((item, index) => {
+                const tmpPath = item.path;
 
-        req.files[key].forEach((item) => {
-            const tmpPath = item.path;
+                if (!fs.existsSync(`images/${req.body.category}`)){
+                    fs.mkdirSync(`images/${req.body.category}`);
+                }
+                if (!fs.existsSync(`images/${req.body.category}/${req.body.name}`)){
+                    fs.mkdirSync(`images/${req.body.category}/${req.body.name}`);
+                }
+                const targetPath = `images/${req.body.category}/${req.body.name}/${key}_${item.originalname}`;
 
-            if (!fs.existsSync(`images/${req.body.category}`)){
-                fs.mkdirSync(`images/${req.body.category}`);
-            }
-            if (!fs.existsSync(`images/${req.body.category}/${req.body.name}`)){
-                fs.mkdirSync(`images/${req.body.category}/${req.body.name}`);
-            }
-            const targetPath = `images/${req.body.category}/${req.body.name}/${key}_${item.originalname}`;
-
-            const src = fs.createReadStream(tmpPath);
-            const dest = fs.createWriteStream(targetPath);
-            src.pipe(dest);
-            src.on('end', () => {
-                files.push(targetPath)
-            });
-            src.on('error', (err) => { reject(err) });
-        })
-        resolve(files)
+                const src = fs.createReadStream(tmpPath);
+                const dest = fs.createWriteStream(targetPath);
+                src.pipe(dest);
+                src.on('end', () => {
+                    files.push(targetPath)
+                    if (index + 1 === req.files[key].length) {
+                        resolve(files)
+                    }
+                });
+                src.on('error', (err) => { reject(err) });
+            })
+        }
     })
 }

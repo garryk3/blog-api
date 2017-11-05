@@ -1,137 +1,166 @@
-import fs from 'fs'
-import multer from'multer'
-import config from '../config/config'
-import rimraf from 'rimraf'
-import express from 'express'
-import { MongoClient, ObjectID } from 'mongodb'
-import categoryRoute from './category'
-import articleRoute from './article'
+'use strict';
 
-const upload = multer({ dest: 'tmp/' })
-const router = express.Router()
-const db = MongoClient.connect(config.dbUrl)
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
 
-router.use(async (req, res, next) => {
+var _fs = require('fs');
+
+var _fs2 = _interopRequireDefault(_fs);
+
+var _multer = require('multer');
+
+var _multer2 = _interopRequireDefault(_multer);
+
+var _config = require('../config/config');
+
+var _config2 = _interopRequireDefault(_config);
+
+var _rimraf = require('rimraf');
+
+var _rimraf2 = _interopRequireDefault(_rimraf);
+
+var _express = require('express');
+
+var _express2 = _interopRequireDefault(_express);
+
+var _mongodb = require('mongodb');
+
+var _category = require('./category');
+
+var _category2 = _interopRequireDefault(_category);
+
+var _article = require('./article');
+
+var _article2 = _interopRequireDefault(_article);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var upload = (0, _multer2.default)({ dest: 'tmp/' });
+var router = _express2.default.Router();
+var db = _mongodb.MongoClient.connect(_config2.default.dbUrl);
+
+router.use(async function (req, res, next) {
     try {
-        const dbConnect = await db
-        next()
+        var dbConnect = await db;
+        next();
     } catch (err) {
-        res.send({ error: { message: `Ошибка соединения с базой данных: ${err.message}` } })
+        res.send({ error: { message: '\u041E\u0448\u0438\u0431\u043A\u0430 \u0441\u043E\u0435\u0434\u0438\u043D\u0435\u043D\u0438\u044F \u0441 \u0431\u0430\u0437\u043E\u0439 \u0434\u0430\u043D\u043D\u044B\u0445: ' + err.message } });
     }
-})
+});
 
-router.route('/')
-    .get((req, res) => {
-        try {
-            console.log('api ready')
-            res.send('api ready')
-        } catch(err) {
-            res.send(err)
-        }
-    })
+router.route('/').get(function (req, res) {
+    try {
+        console.log('api ready');
+        res.send('api ready');
+    } catch (err) {
+        res.send(err);
+    }
+});
 
-router.use('/category', categoryRoute)
-router.use('/article', articleRoute)
+router.use('/category', _category2.default);
+router.use('/article', _article2.default);
 
-router.route('/categories')
-    .get(async (req, res) => {
-        try {
-            const items = await db.listCollections({}, {
-                $ne: [
-                    { 'name': 'system.indexes' }
-                ]
-            }).toArray()
-            console.log('items', items)
-            res.send(items)
-        } catch(err)  {
-            res.send({error: err})
-        }
-    })
+router.route('/categories').get(async function (req, res) {
+    try {
+        var items = await db.listCollections({}, {
+            $ne: [{ 'name': 'system.indexes' }]
+        }).toArray();
+        console.log('items', items);
+        res.send(items);
+    } catch (err) {
+        res.send({ error: err });
+    }
+});
 
-router.get('/get-categories', (req, res) => {
-    console.log('get cats route')
-    db.listCollections().toArray().then((items) => {
+router.get('/get-categories', function (req, res) {
+    console.log('get cats route');
+    db.listCollections().toArray().then(function (items) {
         if (false) {
-            res.send('err')
+            res.send('err');
         } else {
-            const names = items.map((item) => {
-                if(item.name !== 'system.indexes') {
+            var names = items.map(function (item) {
+                if (item.name !== 'system.indexes') {
                     return {
                         name: item.name,
                         articles: []
-                    }
+                    };
                 }
-            }).filter((item) => {
-                if (item) return item
-            })
-            res.send(names)
+            }).filter(function (item) {
+                if (item) return item;
+            });
+            res.send(names);
         }
-    })
-})
+    });
+});
 
-router.get('/get-articles-names', (req, res) => {
-    console.log('get names route')
-    db.listCollections().toArray().then((items) => {
-        if(err) {
-            res.send({error: err})
+router.get('/get-articles-names', function (req, res) {
+    console.log('get names route');
+    db.listCollections().toArray().then(function (items) {
+        if (err) {
+            res.send({ error: err });
         } else {
-            const docList = []
-            const ignore = ['system.indexes']
-            const finalLength = items.length - ignore.length
-            items.forEach((item) => {
-                if (ignore.findIndex((ignore) => ignore === item.name) === -1) {
-                    db.collection(item.name).find({}, {name: true}).toArray().then((docs) => {
+            var docList = [];
+            var ignore = ['system.indexes'];
+            var finalLength = items.length - ignore.length;
+            items.forEach(function (item) {
+                if (ignore.findIndex(function (ignore) {
+                    return ignore === item.name;
+                }) === -1) {
+                    db.collection(item.name).find({}, { name: true }).toArray().then(function (docs) {
                         docList.push({
                             name: item.name,
                             articles: docs,
                             id: item._id
-                        })
-                        if(docList.length === finalLength) {
-                            const response = docList.sort((a, b) => {
-                                return a.name > b.name
-                            })
-                            res.send(response)
+                        });
+                        if (docList.length === finalLength) {
+                            var response = docList.sort(function (a, b) {
+                                return a.name > b.name;
+                            });
+                            res.send(response);
                         }
-                    })
+                    });
                 }
-            })
+            });
         }
-    })
-})
-const imgUploader = (req, key) => {
-    return new Promise((resolve, reject) => {
-        const files = []
+    });
+});
+var imgUploader = function imgUploader(req, key) {
+    return new Promise(function (resolve, reject) {
+        var files = [];
         if (!req.files[key]) {
-            resolve(files)
+            resolve(files);
         } else {
-            req.files[key].forEach((item, index) => {
-                const tmpPath = item.path;
+            req.files[key].forEach(function (item, index) {
+                var tmpPath = item.path;
 
-                if (!fs.existsSync(`static/images/${req.body.category}`)){
-                    fs.mkdirSync(`static/images/${req.body.category}`);
+                if (!_fs2.default.existsSync('static/images/' + req.body.category)) {
+                    _fs2.default.mkdirSync('static/images/' + req.body.category);
                 }
-                if (!fs.existsSync(`static/images/${req.body.category}/${req.body.name}`)){
-                    fs.mkdirSync(`static/images/${req.body.category}/${req.body.name}`);
+                if (!_fs2.default.existsSync('static/images/' + req.body.category + '/' + req.body.name)) {
+                    _fs2.default.mkdirSync('static/images/' + req.body.category + '/' + req.body.name);
                 }
-                const dbPath = `images/${req.body.category}/${req.body.name}/${key}_${item.originalname}`;
-                const targetPath = 'static/' + dbPath;
+                var dbPath = 'images/' + req.body.category + '/' + req.body.name + '/' + key + '_' + item.originalname;
+                var targetPath = 'static/' + dbPath;
 
-                const src = fs.createReadStream(tmpPath);
-                const dest = fs.createWriteStream(targetPath);
+                var src = _fs2.default.createReadStream(tmpPath);
+                var dest = _fs2.default.createWriteStream(targetPath);
                 src.pipe(dest);
-                src.on('end', () => {
-                    files.push(dbPath)
+                src.on('end', function () {
+                    files.push(dbPath);
                     if (index + 1 === req.files[key].length) {
-                        resolve(files)
+                        resolve(files);
                     }
                 });
-                src.on('error', (err) => { reject(err) });
-            })
+                src.on('error', function (err) {
+                    reject(err);
+                });
+            });
         }
-    })
-}
+    });
+};
 
-export { router, db }
+exports.default = router;
 
 // module.exports = function (app, db, err, upload) {
 //     app.get('/get-categories', (req, res) => {
@@ -275,4 +304,3 @@ export { router, db }
 //         })
 //     })
 // }
-

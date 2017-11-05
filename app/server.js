@@ -3,7 +3,7 @@ import bodyParser  from 'body-parser'
 import config from './config/config'
 import cors from 'cors'
 import morgan from 'morgan'
-import { router as routes } from './routes'
+import routes from './routes'
 
 const app = express();
 

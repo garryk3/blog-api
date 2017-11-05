@@ -15,5 +15,4 @@ router.route('/')
         console.log('delete cat')
     })
 
-
 export default router

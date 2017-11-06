@@ -15,7 +15,6 @@ app.use(express.static('static'));
 app.use('/api', routes);
 
 
-
 app.listen(config.port, () => {
     console.log(`We are live on ${config.host}:${config.port}`);
 });

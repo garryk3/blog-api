@@ -2,8 +2,6 @@ import express from 'express'
 import rimraf from 'rimraf'
 import fs from 'fs'
 
-import { db } from './'
-
 const router = express.Router()
 
 export default (db) => {
@@ -22,13 +20,13 @@ export default (db) => {
 
         .delete(async (req, res) => {
             try {
-                console.log('cat', req.body)
                 const deleted = await db.collection(req.body.category).drop()
                 if (fs.existsSync(`static/images/${req.body.category}`)){
                     rimraf(`static/images/${req.body.category}`, () => console.log('delete folder', `static/images/${req.body.category}`));
                 }
                 res.send('success')
             } catch (err) {
+                console.log('err', err)
                 res.send({error: err})
             }
         })
@@ -60,6 +58,7 @@ export default (db) => {
                     res.send(items)
                 }
             } catch(err)  {
+                console.log('err', err)
                 res.send({ error: err })
             }
         })

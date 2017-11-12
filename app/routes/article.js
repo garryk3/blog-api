@@ -1,11 +1,14 @@
 import express from 'express'
 import { ObjectID } from 'mongodb'
 import rimraf from 'rimraf'
+import path from 'path'
 import fs from 'fs'
 import multer from'multer'
 
-const upload = multer({ dest: 'tmp/' })
+const tmpDir = 'tmp/'
+const upload = multer({ dest: tmpDir })
 const router = express.Router()
+const uploadFilesParams = [{ name: 'mainImg', maxCount: 1 }, { name: 'gallery', maxCount: 20 }]
 
 export default (db) => {
     router.route('/')
@@ -27,19 +30,19 @@ export default (db) => {
             }
         })
 
-        .post(upload.fields([{ name: 'mainImg', maxCount: 1 }, { name: 'gallery', maxCount: 20 }]), (req, res) => {
+        .post(upload.fields(uploadFilesParams), (req, res) => {
             articleSave(req, res, db)
         })
 
-        .put(upload.fields([{ name: 'mainImg', maxCount: 1 }, { name: 'gallery', maxCount: 20 }]), (req, res) => {
+        .put(upload.fields(uploadFilesParams), (req, res) => {
             articleSave(req, res, db)
         })
 
         .delete((req, res) => {
             try {
-                db.collection(req.body.category).deleteOne({ name: req.body.article })
-                if (fs.existsSync(`static/images/${req.body.category}/${req.body.article}`)){
-                    rimraf(`static/images/${req.body.category}/${req.body.article}`, () => console.log('delete folder', `static/images/${req.body.category}/${req.body.article}`));
+                db.collection(req.query.category).deleteOne({ name: req.query.article })
+                if (fs.existsSync(`static/images/${req.query.category}/${req.query.article}`)){
+                    rimraf(`static/images/${req.query.category}/${req.query.article}`, () => console.log('delete folder', `static/images/${req.query.category}/${req.query.article}`));
                 }
                 res.send('success')
             } catch (err) {
@@ -90,6 +93,15 @@ const imgUploader = (req, key) => {
                 const dest = fs.createWriteStream(targetPath);
                 src.pipe(dest);
                 src.on('end', () => {
+                    fs.readdir(directory, (err, files) => {
+                        if (err) throw err;
+
+                        for (const file of files) {
+                            fs.unlink(path.join(tmpDir, file), err => {
+                                if (err) throw err;
+                            });
+                        }
+                    });
                     files.push(dbPath)
                     if (index + 1 === req.files[key].length) {
                         resolve(files)

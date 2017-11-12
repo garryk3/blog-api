@@ -20,9 +20,10 @@ export default (db) => {
 
         .delete(async (req, res) => {
             try {
-                const deleted = await db.collection(req.body.category).drop()
-                if (fs.existsSync(`static/images/${req.body.category}`)){
-                    rimraf(`static/images/${req.body.category}`, () => console.log('delete folder', `static/images/${req.body.category}`));
+                const deleted = await db.collection(req.query.category).drop()
+                console.log('req.body.category', req.query.category)
+                if (fs.existsSync(`static/images/${req.query.category}`)){
+                    rimraf(`static/images/${req.query.category}`, () => console.log('delete folder', `static/images/${req.body.category}`));
                 }
                 res.send('success')
             } catch (err) {
@@ -59,7 +60,7 @@ export default (db) => {
                 }
             } catch(err)  {
                 console.log('err', err)
-                res.send({ error: err })
+                res.send({ err })
             }
         })
 

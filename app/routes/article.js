@@ -4,6 +4,7 @@ import rimraf from 'rimraf'
 import path from 'path'
 import fs from 'fs'
 import multer from'multer'
+import config from '../config/config'
 
 const tmpDir = 'tmp/'
 const upload = multer({ dest: tmpDir })
@@ -86,22 +87,24 @@ const imgUploader = (req, key) => {
                 if (!fs.existsSync(`static/images/${req.body.category}/${req.body.name}`)){
                     fs.mkdirSync(`static/images/${req.body.category}/${req.body.name}`);
                 }
-                const dbPath = `images/${req.body.category}/${req.body.name}/${key}_${item.originalname}`;
-                const targetPath = 'static/' + dbPath;
+                const imgPath = `images/${req.body.category}/${req.body.name}/${key}_${item.originalname}`;
+                const targetPath = 'static/' + imgPath;
+                const dbPath = `${config.connectType}${config.host}:${config.port}/${imgPath}`;
 
                 const src = fs.createReadStream(tmpPath);
                 const dest = fs.createWriteStream(targetPath);
                 src.pipe(dest);
                 src.on('end', () => {
-                    fs.readdir(directory, (err, files) => {
-                        if (err) throw err;
-
-                        for (const file of files) {
-                            fs.unlink(path.join(tmpDir, file), err => {
-                                if (err) throw err;
-                            });
-                        }
-                    });
+                    // @TODO fix error unlink file
+                    // fs.readdir(tmpDir, (err, files) => {
+                    //     if (err) throw err;
+                    //
+                    //     for (const file of files) {
+                    //         fs.existsSync(path.join(tmpDir, file)) && fs.unlink(path.join(tmpDir, file), err => {
+                    //             if (err) throw err;
+                    //         });
+                    //     }
+                    // });
                     files.push(dbPath)
                     if (index + 1 === req.files[key].length) {
                         resolve(files)
@@ -117,15 +120,26 @@ const articleSave = (req, res, db) => {
         const data = Object.assign({}, req.body)
         let invalid = false
         for (let key in data) {
-            if (!data[key]) { invalid = true }
+            if (key === 'mainImg' || key === 'gallery') {
+                data[key] = JSON.parse(data[key])
+            }
+            if (!data[key]) {
+                invalid = true
+            }
         }
-        if (!req.files.mainImg) {
+        console.log("req.files.mainImg", req.files.mainImg)
+        console.log('req.body.mainImg', req.body.mainImg)
+        if (!req.files.mainImg && !req.body.mainImg) {
             invalid = true
         }
         if (!invalid) {
             Promise.all([imgUploader(req, 'mainImg'), imgUploader(req, 'gallery')]).then((response) => {
-                data.mainImg = response[0]
-                data.gallery = response[1]
+                if (response[0].length) {
+                    data.mainImg = response[0]
+                }
+                if (response[1].length) {
+                    data.gallery = response[1]
+                }
                 if (req.method === 'POST') {
                     db.collection(req.body.category).insert(data, (error, result) => {
                         if (error) {
